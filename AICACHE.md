@@ -603,3 +603,15 @@
 - Implemented 7 deterministic Playwright baselines: light desktop home, dark mobile home, accessible desktop list, Cobe and tiled earth layouts, light desktop detail and dark mobile detail. All use mocked Komari API/RPC/visitor data, fixed time, disabled animations and hidden dynamic 3D canvas pixels while retaining globe layout boundaries.
 - First baseline generation and repeated comparison both passed 7/7 with system Chrome. Windows system-channel Chrome did not exit cleanly after reporting results, so release validation does not treat that local channel teardown as a product failure; CI installs and runs Playwright's managed Chromium.
 - Added the independent `Visual Regression` workflow for pull requests and `main`, with actual/diff/HTML report artifacts retained for 14 days on failure. Release target is v3.3.0.
+
+## 2026-10-10 per-task Ping display completed (M4)
+
+- Status: done. Node cards render backend-ordered task names with separate latency/loss values and histories. Preserve the existing aggregate list display, public access, node subscriptions and periodic refresh. Metadata uses the existing SharedCache and RequestManager.
+- Metric loss samples retain task IDs to prevent cross-task mixing. Full loss shows no latency and 100% loss; empty data has an explicit status. Row keyboard activation opens the Ping dialog without navigating the outer card.
+- Validation: bun run lint and bun run build passed; git diff --check passed. Focused Playwright tests passed 2/2 with managed Chromium, covering Metric and legacy responses, backend ordering, independent averages/history, complete packet loss, realtime refresh, desktop/mobile width, light/dark rendering and keyboard dialog activation. Screenshots visually inspected.
+- Build retains upstream manifest version 3.3.8 and package layout (komari-theme.json, preview.png, dist/); custom local build only, no remote publication. Base commit e0aedb0.
+
+## 2026-10-10 v3.3.9 GitHub repository installation (M4/M6)
+
+- User authorized publishing the per-task card changes to Fourgetu/komari-theme-Glassmorphism for installation by repository URL.
+- Prepared: manifest and README now target v3.3.9 and the Fourgetu installation URL. Bun lockfile is tracked and release Bun is pinned to 1.3.14. Frozen install, lint, build, diff checks and all 17 Playwright tests passed. Next: push main and verify GitHub Actions and downloadable release assets.

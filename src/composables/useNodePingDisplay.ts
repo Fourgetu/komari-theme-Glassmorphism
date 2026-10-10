@@ -1,4 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { NodePingHistoryPoint } from '@/composables/useNodePingStats'
 import { computed, toValue } from 'vue'
 import { useNodePingStats } from '@/composables/useNodePingStats'
 import { PING_SUMMARY_MAX_COUNT } from '@/constants/load'
@@ -74,8 +75,7 @@ export function useNodePingDisplay(
     maxCount: PING_SUMMARY_MAX_COUNT,
   })
 
-  function buildPingBars(metric: NodePingMetric): NodePingBar[] {
-    const points = pingStats.history.value
+  function buildPingBars(metric: NodePingMetric, points: NodePingHistoryPoint[] = pingStats.history.value): NodePingBar[] {
     if (!points.length)
       return []
 
@@ -159,10 +159,25 @@ export function useNodePingDisplay(
     return `平均丢包 ${pingStats.avgLoss.value.toFixed(1)}%${volatility}`
   })
 
+  const taskRows = computed(() => pingStats.tasks.value.map(task => ({
+    id: task.id,
+    name: task.name,
+    latencyDisplay: task.hasLatency ? `${Math.round(task.avgLatency)} ms` : '-',
+    lossDisplay: task.hasData ? `${task.avgLoss.toFixed(1)}%` : '-',
+    latencyBars: task.history.length ? buildPingBars('latency', task.history) : buildEmptyPingBars('latency'),
+    lossBars: task.history.length ? buildPingBars('loss', task.history) : buildEmptyPingBars('loss'),
+  })))
+
+  const taskEmptyText = computed(() => pingStats.loading.value
+    ? '加载中'
+    : pingStats.error.value ? '加载失败' : !pingStatsEnabled.value ? '未启用记录' : '暂无线路数据')
+
   return {
     pingStats,
     pingStatsEnabled,
     pingStatsHours,
+    taskRows,
+    taskEmptyText,
     latencyRenderBars,
     lossRenderBars,
     latencyDisplay,

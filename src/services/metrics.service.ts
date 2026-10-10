@@ -142,10 +142,15 @@ export async function loadPingMetricStats(params: PingMetricStatsParams): Promis
   )
 }
 
+const publicPingTasksCache = new SharedCache<PingTaskInfo[]>({ maxSize: 1, ttl: 60_000 })
+
 export async function loadPublicPingTasks(): Promise<PingTaskInfo[]> {
+  const cached = publicPingTasksCache.get('tasks')
+  if (cached)
+    return cached
   return requestManager.run(
     getPublicPingTasksRequestKey(),
-    async () => getSharedRpc().getPublicPingTasks(),
+    async () => publicPingTasksCache.set('tasks', await getSharedRpc().getPublicPingTasks()),
     { shouldRetry: shouldRetryMetricRequest },
   )
 }
