@@ -614,4 +614,10 @@
 ## 2026-10-10 v3.3.9 GitHub repository installation (M4/M6)
 
 - User authorized publishing the per-task card changes to Fourgetu/komari-theme-Glassmorphism for installation by repository URL.
-- Prepared: manifest and README now target v3.3.9 and the Fourgetu installation URL. Bun lockfile is tracked and release Bun is pinned to 1.3.14. Frozen install, lint, build, diff checks and all 17 Playwright tests passed. Next: push main and verify GitHub Actions and downloadable release assets.
+- Completed: v3.3.9 published as the latest stable Release in Fourgetu/komari-theme-Glassmorphism, targeting commit 013fc34eebc751b06b1aa56d65a6930362b47bac. README installation URL points to Fourgetu. Frozen install, lint, build and all 17 Playwright tests passed.
+- GitHub Code Quality run 38054159540 passed. First fork push registered workflows without starting them; release was published manually and Code Quality explicitly dispatched. Anonymous download of komari-theme-Glassmorphism-build-013fc34.zip succeeded, with matching local and GitHub SHA-256: 11ab76a47947034653e70f9a802422e1522a378c39ea1bd3f5e24d42c1f7f061. Verified manifest 3.3.9, preview.png and dist/index.html. These final verification notes remain local.
+
+## 2026-10-10 v3.3.10 uniform compact Ping rows (M4)
+
+- Implemented: fixed 96px card Ping panel for up to four 18px rows with 4px gaps. Empty slots remain blank. Task labels align to the centre of both history bars using shared grid rows. Values and detail access are preserved.
+- Validation: lint, production build and all 17 browser regressions passed, including mixed 0/2/3/4/5-task fixtures for equal card heights, four-row limit and label/bar centre alignment on desktop/light and mobile/dark. Updated the four affected home screenshot baselines and visually inspected the four-line cards. Next: publish v3.3.10 to the existing authorized repository and verify the release asset.

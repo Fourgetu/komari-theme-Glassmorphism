@@ -9,6 +9,8 @@ for (const source of ['metric', 'legacy'] as const) {
       { id: 30, name: '福建移动', interval: 60, loss: 0 },
       { id: 10, name: '福建联通', interval: 60, loss: 0 },
       { id: 20, name: '福建电信', interval: 60, loss: 0 },
+      { id: 40, name: '福建移动V6', interval: 60, loss: 0 },
+      { id: 50, name: '额外线路', interval: 60, loss: 0 },
     ]
     let refreshed = false
     const latency = (id: number) => id === 30 ? (refreshed ? 88 : 166) : 170
@@ -17,6 +19,8 @@ for (const source of ['metric', 'legacy'] as const) {
     await page.route('**/rpc2', async (route) => {
       const request = route.request().postDataJSON()
       const uuid = request.params?.entity_id ?? request.params?.uuid ?? '00000000-0000-4000-8000-000000000001'
+      const taskCount = [3, 2, 4, 5, 0][Number(uuid.slice(-2)) - 1] ?? 3
+      const nodeTasks = tasks.slice(0, taskCount)
       let result: unknown
       if (request.method === 'public:getPublicPingTasks') {
         result = tasks
@@ -24,7 +28,7 @@ for (const source of ['metric', 'legacy'] as const) {
       else if (request.method === 'public:getPingMetricStats') {
         result = { stats: source === 'legacy'
           ? []
-          : [...tasks].reverse().map(task => ({
+          : [...nodeTasks].reverse().map(task => ({
               entity_id: uuid,
               task_id: String(task.id),
               name: task.name,
@@ -40,7 +44,7 @@ for (const source of ['metric', 'legacy'] as const) {
       else if (request.method === 'public:queryMetrics') {
         result = { series: source === 'legacy'
           ? []
-          : [...tasks].reverse().flatMap(task => ['ping.latency_ms', 'ping.loss'].map(metric => ({
+          : [...nodeTasks].reverse().flatMap(task => ['ping.latency_ms', 'ping.loss'].map(metric => ({
               entity_id: uuid,
               metric_key: metric,
               tags: { task_id: String(task.id), task_name: task.name },
@@ -52,7 +56,7 @@ for (const source of ['metric', 'legacy'] as const) {
             }))) }
       }
       else if (request.method === 'public:getPingRecords' || (request.method === 'common:getRecords' && request.params?.type === 'ping')) {
-        result = { tasks, records: tasks.flatMap(task => Array.from({ length: 60 }, (_, index) => ({
+        result = { tasks, records: nodeTasks.flatMap(task => Array.from({ length: 60 }, (_, index) => ({
           client: uuid,
           task_id: task.id,
           time: time(index),
@@ -87,6 +91,32 @@ for (const source of ['metric', 'legacy'] as const) {
     // A failed task must have red loss history without contaminating its neighbour.
     await expect(rows.nth(2).locator('[data-node-ping-bars="loss"] .bg-signal-5')).toHaveCount(20)
     await expect(rows.nth(1).locator('[data-node-ping-bars="loss"] .bg-signal-1')).toHaveCount(20)
+    // Different task counts must neither resize the cards nor shift label/bar centres.
+    const initialCardHeight = (await card.boundingBox())!.height
+    for (const [name, count] of [
+      ['主控-洛杉矶', 3],
+      ['香港边缘节点-超长名称布局测试', 2],
+      ['东京-高负载', 4],
+      ['新加坡-A100', 4],
+      ['法兰克福-2680', 0],
+    ] as const) {
+      const currentCard = page.getByRole('button', { name: `查看节点 ${name} 详情`, exact: true })
+      await currentCard.scrollIntoViewIfNeeded()
+      await expect(currentCard.locator('[data-ping-task-id]')).toHaveCount(count)
+      const panel = currentCard.locator('[data-node-ping-tasks]')
+      expect((await panel.boundingBox())!.height).toBe(96)
+      expect(Math.abs((await currentCard.boundingBox())!.height - initialCardHeight)).toBeLessThan(1)
+      for (const row of await currentCard.locator('[data-ping-task-id]').all()) {
+        const label = (await row.locator('[data-ping-task-name]').boundingBox())!
+        const labelCenter = label.y + label.height / 2
+        for (const bars of await row.locator('[data-node-ping-bars]').all()) {
+          const box = (await bars.boundingBox())!
+          expect(Math.abs(box.y + box.height / 2 - labelCenter)).toBeLessThan(1)
+        }
+      }
+    }
+    const fourLineCard = page.getByRole('button', { name: '查看节点 东京-高负载 详情', exact: true })
+    await fourLineCard.screenshot({ path: testInfo.outputPath(`ping-four-lines-${source}.png`) })
     expect(await page.locator('html').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
     await card.screenshot({ path: testInfo.outputPath(`ping-tasks-${source}.png`) })
     if (source === 'metric') {

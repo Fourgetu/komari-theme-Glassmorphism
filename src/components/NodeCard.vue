@@ -81,6 +81,7 @@ const diskPercentage = computed(() => getDiskPercentage(props.node))
 const diskStatus = computed(() => getStatus(diskPercentage.value))
 
 const { taskRows, taskEmptyText } = useNodePingDisplay(() => props.node.uuid, { enabled: () => props.pingEnabled })
+const visiblePingTasks = computed(() => taskRows.value.slice(0, 4))
 
 const trafficUsedPercentage = computed(() => getTrafficUsedPercentage(props.node))
 const trafficUsed = computed(() => getTrafficUsed(props.node))
@@ -441,31 +442,32 @@ function hasRegion(region: string | null | undefined): boolean {
         <!-- 每条探测线路独立展示延迟和丢包 -->
         <div
           data-node-ping-tasks
-          class="flex min-w-0 flex-col gap-2 rounded-lg bg-slate-500/5 p-2"
-          :class="[isMiniNodeCard ? 'gap-1.5 p-1' : '', !props.node.online ? 'blur-xs opacity-50' : '']"
+          class="grid h-24 min-w-0 shrink-0 grid-rows-[repeat(4,18px)] content-start gap-y-1 rounded-lg bg-slate-500/5 px-2 py-1.5"
+          :class="!props.node.online ? 'blur-xs opacity-50' : ''"
         >
           <button
-            v-for="task in taskRows"
+            v-for="task in visiblePingTasks"
             :key="task.id"
             type="button"
             :data-ping-task-id="task.id"
-            class="group/panel grid min-w-0 w-full grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 rounded text-[11px] leading-none focus-visible:outline-2 focus-visible:outline-ring"
+            class="group/panel grid h-[18px] min-w-0 w-full grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)] grid-rows-[11px_6px] items-center gap-x-2 gap-y-px rounded text-[11px] leading-none focus-visible:outline-2 focus-visible:outline-ring"
             :aria-label="`${props.node.name} ${task.name} 延迟 ${task.latencyDisplay} 丢包 ${task.lossDisplay}，打开监测`"
             @keydown.stop
             @click.stop="emit('pingClick')"
           >
-            <span :title="task.name" class="truncate text-left text-muted-foreground">{{ task.name }}</span>
+            <span data-ping-task-name :title="task.name" class="col-start-1 row-start-2 truncate text-left text-muted-foreground">{{ task.name }}</span>
             <span
               v-for="metric in (['latency', 'loss'] as const)"
               :key="metric"
-              class="flex min-w-0 flex-col gap-1"
+              class="row-span-2 row-start-1 grid min-w-0 grid-rows-[11px_6px] gap-y-px"
+              :class="metric === 'latency' ? 'col-start-2' : 'col-start-3'"
             >
               <span class="text-center font-medium tabular-nums" :title="metric === 'latency' ? '平均延迟' : '平均丢包率'">
                 {{ metric === 'latency' ? task.latencyDisplay : task.lossDisplay }}
               </span>
               <span
                 :data-node-ping-bars="metric"
-                class="grid h-2 min-w-0 w-full gap-[1px] opacity-80 group-hover/panel:opacity-100"
+                class="grid h-full min-w-0 w-full gap-[1px] opacity-80 group-hover/panel:opacity-100"
                 :style="{ gridTemplateColumns: `repeat(${(metric === 'latency' ? task.latencyBars : task.lossBars).length}, minmax(0, 1fr))` }"
               >
                 <DataTooltip
@@ -481,7 +483,7 @@ function hasRegion(region: string | null | undefined): boolean {
               </span>
             </span>
           </button>
-          <div v-if="!taskRows.length" class="py-1 text-center text-[11px] text-muted-foreground" role="status">
+          <div v-if="!visiblePingTasks.length" class="row-span-4 flex items-center justify-center text-[11px] text-muted-foreground" role="status">
             {{ taskEmptyText }}
           </div>
         </div>
